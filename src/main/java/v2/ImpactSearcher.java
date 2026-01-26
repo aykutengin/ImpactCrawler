@@ -7,7 +7,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import v2.model.CrawlerTerm;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -26,17 +28,24 @@ public class ImpactSearcher {
     }
 
     public void searchAndPrint(List<String> terms, int maxHitsPerTerm) throws Exception {
-        for (String t : terms) {
-            String q = t.toLowerCase(Locale.ROOT);
+        Queue<CrawlerTerm> queue = new LinkedList<>();
+        for (String term : terms) {
+            String lowerCaseTerm = term.toLowerCase(Locale.ROOT);
             BooleanQuery.Builder bq = new BooleanQuery.Builder();
-            bq.add(new TermQuery(new Term("content_exact", q)), BooleanClause.Occur.SHOULD);
-            bq.add(new TermQuery(new Term("content_parts", q)), BooleanClause.Occur.SHOULD);
+            bq.add(new TermQuery(new Term("content_exact", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
+            bq.add(new TermQuery(new Term("content_parts", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             TopDocs hits = searcher.search(bq.build(), maxHitsPerTerm);
 
-            System.out.println("\nTERM: " + t + "  (hits: " + hits.totalHits.value() + ")");
+            System.out.println("\nTERM: " + term + "  (hits: " + hits.totalHits.value() + ")");
+
+
             for (ScoreDoc sd : hits.scoreDocs) {
                 Document d = searcher.storedFields().document(sd.doc);
                 System.out.println(" - " + d.get("path"));
+                File file = new File(d.get("path"));
+                CrawlerTerm discoveredTerm = new CrawlerTerm(term, file.getAbsolutePath());
+                discoveredTerm.getDestinations().add(file.getName());
+                queue.add(discoveredTerm);
             }
         }
     }
