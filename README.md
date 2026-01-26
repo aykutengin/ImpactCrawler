@@ -17,7 +17,7 @@ Use it to quickly find references (by class name or token) across large repos.
 ---
 
 ## Requirements
-- JDK 11+
+- JDK 25+
 - Maven 3.8+
 
 ---
