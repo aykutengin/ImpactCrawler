@@ -10,6 +10,7 @@ import org.apache.lucene.store.FSDirectory;
 import v2.model.CrawlerTerm;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -28,29 +29,35 @@ public class ImpactSearcher {
     }
 
     public void searchAndPrint(List<String> terms, int maxHitsPerTerm) throws Exception {
+        for (String term : terms) {
+            searchTerm(term, maxHitsPerTerm);
+        }
+    }
+
+    private void searchTerm(String term, int maxHitsPerTerm) throws IOException {
         Queue<CrawlerTerm> queue = new LinkedList<>();
         TreeSet<CrawlerTerm> set = new TreeSet<>();
-        CrawlerTerm rootCrawlerTerm = new CrawlerTerm(terms.get(0), null);
+        CrawlerTerm rootCrawlerTerm = new CrawlerTerm(term, null);
         queue.add(rootCrawlerTerm);
         List<String> relatedServices = new ArrayList<>();
         while (!queue.isEmpty()) {
-            CrawlerTerm term = queue.poll();
-            if (set.contains(term)) {
+            CrawlerTerm crawlerTerm = queue.poll();
+            if (set.contains(crawlerTerm)) {
                 continue;
             }
-            String lowerCaseTerm = term.getSource().toLowerCase(Locale.ROOT);
+            String lowerCaseTerm = crawlerTerm.getSource().toLowerCase(Locale.ROOT);
             BooleanQuery.Builder bq = new BooleanQuery.Builder();
             bq.add(new TermQuery(new Term("content_exact", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             bq.add(new TermQuery(new Term("content_parts", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             TopDocs hits = searcher.search(bq.build(), maxHitsPerTerm);
-            set.add(term);
-//            System.out.println("\nTERM: " + term + "  (hits: " + hits.totalHits.value() + ")");
+            set.add(crawlerTerm);
+//            System.out.println("\nTERM: " + crawlerTerm + "  (hits: " + hits.totalHits.value() + ")");
 
             for (ScoreDoc sd : hits.scoreDocs) {
                 Document d = searcher.storedFields().document(sd.doc);
                 File file = new File(d.get("path"));
                 String fileName = file.getName().replace(".java", "");
-                if (fileName.equals(term.getSource())) {
+                if (fileName.equals(crawlerTerm.getSource())) {
 
                     continue;
                 }
@@ -58,13 +65,11 @@ public class ImpactSearcher {
                     relatedServices.add(fileName);
                 }
                 CrawlerTerm discoveredTerm = new CrawlerTerm(fileName, file.getAbsolutePath());
-                term.getDestinations().add(discoveredTerm);
+                crawlerTerm.getDestinations().add(discoveredTerm);
                 queue.add(discoveredTerm);
 //                System.out.println("discoveredTerm : " + discoveredTerm);
             }
         }
-
-//        System.out.println("rootCrawlerTerm : " + rootCrawlerTerm.getSource());
         System.out.println("relatedServices for " + rootCrawlerTerm.getSource() + ": " + relatedServices);
     }
 
