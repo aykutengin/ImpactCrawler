@@ -29,25 +29,43 @@ public class ImpactSearcher {
 
     public void searchAndPrint(List<String> terms, int maxHitsPerTerm) throws Exception {
         Queue<CrawlerTerm> queue = new LinkedList<>();
-        queue.add(new CrawlerTerm(terms.get(0), null));
-        while(!queue.isEmpty()) {
-            var term = queue.poll();
+        TreeSet<CrawlerTerm> set = new TreeSet<>();
+        CrawlerTerm rootCrawlerTerm = new CrawlerTerm(terms.get(0), null);
+        queue.add(rootCrawlerTerm);
+        List<String> relatedServices = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            CrawlerTerm term = queue.poll();
+            if (set.contains(term)) {
+                continue;
+            }
             String lowerCaseTerm = term.getSource().toLowerCase(Locale.ROOT);
             BooleanQuery.Builder bq = new BooleanQuery.Builder();
             bq.add(new TermQuery(new Term("content_exact", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             bq.add(new TermQuery(new Term("content_parts", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             TopDocs hits = searcher.search(bq.build(), maxHitsPerTerm);
-
-            System.out.println("\nTERM: " + term + "  (hits: " + hits.totalHits.value() + ")");
+            set.add(term);
+//            System.out.println("\nTERM: " + term + "  (hits: " + hits.totalHits.value() + ")");
 
             for (ScoreDoc sd : hits.scoreDocs) {
                 Document d = searcher.storedFields().document(sd.doc);
                 File file = new File(d.get("path"));
-                CrawlerTerm discoveredTerm = new CrawlerTerm(file.getName(), file.getAbsolutePath());
-                term.getDestinations().add(term);
+                String fileName = file.getName().replace(".java", "");
+                if (fileName.equals(term.getSource())) {
+
+                    continue;
+                }
+                if (fileName.endsWith("Service")) {
+                    relatedServices.add(fileName);
+                }
+                CrawlerTerm discoveredTerm = new CrawlerTerm(fileName, file.getAbsolutePath());
+                term.getDestinations().add(discoveredTerm);
                 queue.add(discoveredTerm);
+//                System.out.println("discoveredTerm : " + discoveredTerm);
             }
         }
+
+//        System.out.println("rootCrawlerTerm : " + rootCrawlerTerm.getSource());
+        System.out.println("relatedServices for " + rootCrawlerTerm.getSource() + ": " + relatedServices);
     }
 
     public void close() throws Exception {
