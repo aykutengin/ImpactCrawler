@@ -6,7 +6,7 @@ import java.util.List;
 public class CrawlerTerm {
     String source;
     String path;
-    List<String> destinations;
+    List<CrawlerTerm> destinations;
 
     public CrawlerTerm(String source, String path) {
         this.source = source;
@@ -31,11 +31,11 @@ public class CrawlerTerm {
         this.path = path;
     }
 
-    public List<String> getDestinations() {
+    public List<CrawlerTerm> getDestinations() {
         return destinations;
     }
 
-    public void setDestinations(List<String> destinations) {
+    public void setDestinations(List<CrawlerTerm> destinations) {
         this.destinations = destinations;
     }
 }
