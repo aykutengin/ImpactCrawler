@@ -29,8 +29,10 @@ public class ImpactSearcher {
 
     public void searchAndPrint(List<String> terms, int maxHitsPerTerm) throws Exception {
         Queue<CrawlerTerm> queue = new LinkedList<>();
-        for (String term : terms) {
-            String lowerCaseTerm = term.toLowerCase(Locale.ROOT);
+        queue.add(new CrawlerTerm(terms.get(0), null));
+        while(!queue.isEmpty()) {
+            var term = queue.poll();
+            String lowerCaseTerm = term.getSource().toLowerCase(Locale.ROOT);
             BooleanQuery.Builder bq = new BooleanQuery.Builder();
             bq.add(new TermQuery(new Term("content_exact", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             bq.add(new TermQuery(new Term("content_parts", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
@@ -38,13 +40,11 @@ public class ImpactSearcher {
 
             System.out.println("\nTERM: " + term + "  (hits: " + hits.totalHits.value() + ")");
 
-
             for (ScoreDoc sd : hits.scoreDocs) {
                 Document d = searcher.storedFields().document(sd.doc);
-                System.out.println(" - " + d.get("path"));
                 File file = new File(d.get("path"));
-                CrawlerTerm discoveredTerm = new CrawlerTerm(term, file.getAbsolutePath());
-                discoveredTerm.getDestinations().add(file.getName());
+                CrawlerTerm discoveredTerm = new CrawlerTerm(file.getName(), file.getAbsolutePath());
+                term.getDestinations().add(term);
                 queue.add(discoveredTerm);
             }
         }
