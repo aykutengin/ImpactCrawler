@@ -26,7 +26,7 @@ public class Main {
             }
             case SEARCH: {
                 Path indexPath = Paths.get(cli.indexPath);
-                var analyzer = CodeAnalyzer.perField();
+                Analyzer analyzer = CodeAnalyzer.perField();
                 ImpactSearcher searcher = new ImpactSearcher(indexPath, analyzer);
                 searcher.searchAndPrint(cli.terms, cli.maxHits);
                 searcher.close();

@@ -36,13 +36,13 @@ public class ImpactSearcher {
 
     private void searchTerm(String term, int maxHitsPerTerm) throws IOException {
         Queue<CrawlerTerm> queue = new LinkedList<>();
-        TreeSet<CrawlerTerm> set = new TreeSet<>();
+        TreeSet<CrawlerTerm> crawlerTermTreeSet = new TreeSet<>();
         CrawlerTerm rootCrawlerTerm = new CrawlerTerm(term, null);
         queue.add(rootCrawlerTerm);
         LinkedHashSet<String> relatedServices = new LinkedHashSet<>();
         while (!queue.isEmpty()) {
             CrawlerTerm crawlerTerm = queue.poll();
-            if (set.contains(crawlerTerm)) {
+            if (crawlerTermTreeSet.contains(crawlerTerm)) {
                 continue;
             }
             String lowerCaseTerm = crawlerTerm.getSource().toLowerCase(Locale.ROOT);
@@ -50,7 +50,7 @@ public class ImpactSearcher {
             bq.add(new TermQuery(new Term("content_exact", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             bq.add(new TermQuery(new Term("content_parts", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
             TopDocs hits = searcher.search(bq.build(), maxHitsPerTerm);
-            set.add(crawlerTerm);
+            crawlerTermTreeSet.add(crawlerTerm);
 //            System.out.println("\nTERM: " + crawlerTerm + "  (hits: " + hits.totalHits.value() + ")");
 
             for (ScoreDoc sd : hits.scoreDocs) {
