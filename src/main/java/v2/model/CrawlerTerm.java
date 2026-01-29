@@ -1,10 +1,9 @@
 package v2.model;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
-public class CrawlerTerm implements Comparable {
+public class CrawlerTerm implements Comparable<CrawlerTerm> {
     String source;
     String path;
     List<CrawlerTerm> destinations;
@@ -47,9 +46,9 @@ public class CrawlerTerm implements Comparable {
                 "\ndestinations=" + destinations;
     }
 
-
     @Override
-    public int compareTo(Object crawlerTerm) {
-        return this.source.compareTo(((CrawlerTerm)crawlerTerm).source);
+    public int compareTo(CrawlerTerm crawlerTerm) {
+        return this.source.compareTo(crawlerTerm.source);
     }
+
 }

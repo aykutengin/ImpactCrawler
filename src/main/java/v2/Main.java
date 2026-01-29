@@ -1,13 +1,16 @@
 package v2;
 
+import org.apache.lucene.analysis.Analyzer;
+
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
-        Cli cli = Cli.parse(args);
+    public static void main(String[] args) throws IOException {
+        CommandLineInterface cli = CommandLineInterface.parse(args);
         if (!cli.valid()) {
-            Cli.printHelp();
+            CommandLineInterface.printHelp();
             System.exit(1);
         }
 
@@ -15,7 +18,7 @@ public class Main {
             case INDEX: {
                 Path root = Paths.get(cli.root);
                 Path indexPath = Paths.get(cli.indexPath);
-                var analyzer = CodeAnalyzer.perField();
+                Analyzer analyzer = CodeAnalyzer.perField();
                 CodeIndexer indexer = new CodeIndexer(root, indexPath, analyzer, cli.charsetName, cli.bestEffort);
                 indexer.buildOrUpdate();
                 System.out.println("Index built at: " + indexPath.toAbsolutePath());
@@ -30,7 +33,7 @@ public class Main {
                 break;
             }
             default:
-                Cli.printHelp();
+                CommandLineInterface.printHelp();
         }
     }
 }

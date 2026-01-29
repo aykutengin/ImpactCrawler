@@ -7,8 +7,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 public final class SafeReader {
+    private static Logger logger = Logger.getLogger(SafeReader.class.getName());
+
     private SafeReader() {}
 
     public static String safeRead(Path p, String preferredCharsetName, boolean bestEffort) {
@@ -16,7 +19,7 @@ public final class SafeReader {
         try {
             bytes = Files.readAllBytes(p);
         } catch (IOException e) {
-            System.err.println("WARN: Read failed: " + p + " (" + e.getMessage() + ")");
+            logger.warning("WARN: Read failed: " + p + " (" + e.getMessage() + ")");
             return null;
         }
 
@@ -46,7 +49,7 @@ public final class SafeReader {
             if (s != null) return s;
         }
 
-        System.err.println("WARN: Could not decode: " + p);
+        logger.warning("WARN: Could not decode: " + p);
         return null;
     }
 

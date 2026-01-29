@@ -2,7 +2,7 @@ package v2;
 
 import java.util.*;
 
-public class Cli {
+public class CommandLineInterface {
     enum Mode { INDEX, SEARCH }
 
     Mode mode;
@@ -13,28 +13,28 @@ public class Cli {
     String charsetName = "UTF-8";
     boolean bestEffort = false;
 
-    static Cli parse(String[] args) {
-        Cli c = new Cli();
-        if (args.length == 0) return c;
+    static CommandLineInterface parse(String[] args) {
+        CommandLineInterface cli = new CommandLineInterface();
+        if (args.length == 0) return cli;
 
         int i = 0;
         String cmd = args[i++].toLowerCase(Locale.ROOT);
-        if ("index".equals(cmd)) c.mode = Mode.INDEX;
-        else if ("search".equals(cmd)) c.mode = Mode.SEARCH;
+        if ("index".equals(cmd)) cli.mode = Mode.INDEX;
+        else if ("search".equals(cmd)) cli.mode = Mode.SEARCH;
 
         while (i < args.length) {
             String a = args[i++];
             switch (a) {
-                case "-root":        c.root = next(args, i++); break;
-                case "-index":       c.indexPath = next(args, i++); break;
-                case "-term":        c.terms = Arrays.asList(next(args, i++).split(",")); break;
-                case "-maxHits":     c.maxHits = Integer.parseInt(next(args, i++)); break;
-                case "-charset":     c.charsetName = next(args, i++); break;
-                case "-bestEffort":  c.bestEffort = true; break;
+                case "-root":        cli.root = next(args, i++); break;
+                case "-index":       cli.indexPath = next(args, i++); break;
+                case "-term":        cli.terms = Arrays.asList(next(args, i++).split(",")); break;
+                case "-maxHits":     cli.maxHits = Integer.parseInt(next(args, i++)); break;
+                case "-charset":     cli.charsetName = next(args, i++); break;
+                case "-bestEffort":  cli.bestEffort = true; break;
                 default: /* ignore unknown */ break;
             }
         }
-        return c;
+        return cli;
     }
 
     static String next(String[] a, int i) { if (i >= a.length) throw new IllegalArgumentException("Missing value"); return a[i]; }

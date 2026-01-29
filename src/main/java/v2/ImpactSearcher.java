@@ -21,14 +21,14 @@ public class ImpactSearcher {
     @SuppressWarnings("unused")
     private final Analyzer analyzer;
 
-    public ImpactSearcher(Path indexPath, Analyzer analyzer) throws Exception {
+    public ImpactSearcher(Path indexPath, Analyzer analyzer) throws IOException {
         this.dir = FSDirectory.open(indexPath);
         this.reader = DirectoryReader.open(dir);
         this.searcher = new IndexSearcher(reader);
         this.analyzer = analyzer;
     }
 
-    public void searchAndPrint(List<String> terms, int maxHitsPerTerm) throws Exception {
+    public void searchAndPrint(List<String> terms, int maxHitsPerTerm) throws IOException {
         for (String term : terms) {
             searchTerm(term, maxHitsPerTerm);
         }
@@ -39,7 +39,7 @@ public class ImpactSearcher {
         TreeSet<CrawlerTerm> set = new TreeSet<>();
         CrawlerTerm rootCrawlerTerm = new CrawlerTerm(term, null);
         queue.add(rootCrawlerTerm);
-        List<String> relatedServices = new ArrayList<>();
+        LinkedHashSet<String> relatedServices = new LinkedHashSet<>();
         while (!queue.isEmpty()) {
             CrawlerTerm crawlerTerm = queue.poll();
             if (set.contains(crawlerTerm)) {
@@ -58,7 +58,6 @@ public class ImpactSearcher {
                 File file = new File(d.get("path"));
                 String fileName = file.getName().replace(".java", "");
                 if (fileName.equals(crawlerTerm.getSource())) {
-
                     continue;
                 }
                 if (fileName.endsWith("Service")) {
@@ -73,7 +72,7 @@ public class ImpactSearcher {
         System.out.println("relatedServices for " + rootCrawlerTerm.getSource() + ": " + relatedServices);
     }
 
-    public void close() throws Exception {
+    public void close() throws IOException {
         reader.close();
         dir.close();
     }
