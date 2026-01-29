@@ -14,12 +14,12 @@ public final class SafeReader {
 
     private SafeReader() {}
 
-    public static String safeRead(Path p, String preferredCharsetName, boolean bestEffort) {
+    public static String safeRead(Path path, String preferredCharsetName, boolean bestEffort) {
         byte[] bytes;
         try {
-            bytes = Files.readAllBytes(p);
+            bytes = Files.readAllBytes(path);
         } catch (IOException e) {
-            logger.warning("WARN: Read failed: " + p + " (" + e.getMessage() + ")");
+            logger.warning("WARN: Read failed: " + path + " (" + e.getMessage() + ")");
             return null;
         }
 
@@ -49,7 +49,7 @@ public final class SafeReader {
             if (s != null) return s;
         }
 
-        logger.warning("WARN: Could not decode: " + p);
+        logger.warning("WARN: Could not decode: " + path);
         return null;
     }
 

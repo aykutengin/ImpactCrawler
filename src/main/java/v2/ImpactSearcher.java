@@ -13,8 +13,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class ImpactSearcher {
+    private static Logger logger = Logger.getLogger(ImpactSearcher.class.getName());
+
     private final Directory dir;
     private final DirectoryReader reader;
     private final IndexSearcher searcher;
@@ -69,7 +72,7 @@ public class ImpactSearcher {
 //                System.out.println("discoveredTerm : " + discoveredTerm);
             }
         }
-        System.out.println("relatedServices for " + rootCrawlerTerm.getSource() + ": " + relatedServices);
+        logger.info("relatedServices for " + rootCrawlerTerm.getSource() + ": " + relatedServices);
     }
 
     public void close() throws IOException {

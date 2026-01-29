@@ -47,7 +47,7 @@ public class CodeIndexer {
                 String content = SafeReader.safeRead(file, charsetName, bestEffort);
                 if (content == null) return FileVisitResult.CONTINUE;
 
-                content = CodeSanitizer.stripCommentsAndImports(content);   // <= new name
+                content = CodeSanitizer.stripCommentsAndImports(content);
 
                 Document doc = new Document();
                 doc.add(new StringField("path", file.toString(), Field.Store.YES));
