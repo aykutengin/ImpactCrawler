@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * Represents a MyBatis mapper method with its SQL and metadata.
  */
-public final class MapperMethod {
+public final class TableXmlMapping {
     private final String moduleName;
     private final String mapperXmlPath;
     private final String namespace;
@@ -15,8 +15,8 @@ public final class MapperMethod {
     private final String statementType; // select, insert, update, delete
     private final String rawSql;
 
-    public MapperMethod(String moduleName, String mapperXmlPath, String namespace,
-                       String statementId, String statementType, String rawSql) {
+    public TableXmlMapping(String moduleName, String mapperXmlPath, String namespace,
+                           String statementId, String statementType, String rawSql) {
         this.moduleName = Objects.requireNonNull(moduleName, "moduleName cannot be null");
         this.mapperXmlPath = Objects.requireNonNull(mapperXmlPath, "mapperXmlPath cannot be null");
         this.namespace = Objects.requireNonNull(namespace, "namespace cannot be null");
@@ -61,7 +61,7 @@ public final class MapperMethod {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        MapperMethod that = (MapperMethod) o;
+        TableXmlMapping that = (TableXmlMapping) o;
         return Objects.equals(namespace, that.namespace) &&
                Objects.equals(statementId, that.statementId) &&
                Objects.equals(mapperXmlPath, that.mapperXmlPath);

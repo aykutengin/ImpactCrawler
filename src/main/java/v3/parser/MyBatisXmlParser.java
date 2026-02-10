@@ -1,12 +1,14 @@
 package v3.parser;
 
-import v3.model.MapperMethod;
+import v3.model.TableXmlMapping;
 import org.w3c.dom.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Parses MyBatis mapper XML files to extract mapper methods and SQL.
@@ -14,6 +16,11 @@ import java.util.List;
 public class MyBatisXmlParser {
 
     private static final String[] SQL_STATEMENT_TAGS = {"select", "insert", "update", "delete"};
+    private static final Logger logger = Logger.getLogger(MyBatisXmlParser.class.getName());
+
+    static {
+        logger.setLevel(Level.SEVERE); // Hide debug/info messages by default
+    }
 
     /**
      * Parses a MyBatis mapper XML file and extracts all mapper methods.
@@ -22,8 +29,8 @@ public class MyBatisXmlParser {
      * @param xmlPath path to the mapper XML file
      * @return list of mapper methods found in the file
      */
-    public List<MapperMethod> parseMapperXml(String moduleName, Path xmlPath) {
-        List<MapperMethod> methods = new ArrayList<>();
+    public List<TableXmlMapping> parseMapperXml(String moduleName, Path xmlPath) {
+        List<TableXmlMapping> methods = new ArrayList<>();
 
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -39,7 +46,7 @@ public class MyBatisXmlParser {
             // Get the mapper namespace
             String namespace = root.getAttribute("namespace");
             if (namespace == null || namespace.isEmpty()) {
-                System.err.println("Warning: No namespace found in " + xmlPath);
+                logger.log(Level.WARNING, "No namespace found in " + xmlPath);
                 return methods;
             }
 
@@ -53,9 +60,9 @@ public class MyBatisXmlParser {
                     if (id != null && !id.isEmpty()) {
                         String sql = extractSqlText(element);
 
-                        MapperMethod method = new MapperMethod(
+                        TableXmlMapping method = new TableXmlMapping(
                             moduleName,
-                            xmlPath,
+                            xmlPath.toString(),
                             namespace,
                             id,
                             tag,
@@ -68,7 +75,7 @@ public class MyBatisXmlParser {
             }
 
         } catch (Exception e) {
-            System.err.println("Error parsing mapper XML " + xmlPath + ": " + e.getMessage());
+            logger.log(Level.SEVERE, "Error parsing mapper XML " + xmlPath + ": " + e.getMessage());
         }
 
         return methods;
@@ -78,8 +85,7 @@ public class MyBatisXmlParser {
         StringBuilder sql = new StringBuilder();
         extractTextRecursively(element, sql);
         String result = sql.toString().replaceAll("\\s+", " ").trim();
-        // Debug: print the extracted SQL for verification
-        System.out.println("[DEBUG] Extracted SQL for id '" + element.getAttribute("id") + "':\n" + result);
+        logger.log(Level.FINE, "[DEBUG] Extracted SQL for id '" + element.getAttribute("id") + "':\n" + result);
         return result;
     }
 
