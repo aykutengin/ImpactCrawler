@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Main entry point for the V3 Impact Analysis Tool.
@@ -31,6 +33,10 @@ import java.util.Map;
  *   java v3.MainV3 /path/to/monolith CUSTOMER_TABLE json
  */
 public class MainV3 {
+    private static final Logger logger = Logger.getLogger(MainV3.class.getName());
+    static {
+        logger.setLevel(Level.SEVERE); // Hide info/debug messages by default
+    }
 
     public static void main(String[] args) {
         if (args.length < 2) {
@@ -45,29 +51,28 @@ public class MainV3 {
         // Validate arguments
         Path rootPath = Paths.get(monolithPath);
         if (!Files.exists(rootPath) || !Files.isDirectory(rootPath)) {
-            System.err.println("Error: Invalid monolith path: " + monolithPath);
+            logger.log(Level.SEVERE, "Error: Invalid monolith path: " + monolithPath);
             System.exit(1);
         }
 
         if (!outputFormat.equals("json") && !outputFormat.equals("text")) {
-            System.err.println("Error: Invalid output format. Use 'json' or 'text'");
+            logger.log(Level.SEVERE, "Error: Invalid output format. Use 'json' or 'text'");
             System.exit(1);
         }
 
         try {
             runAnalysis(rootPath, tableName, outputFormat);
         } catch (Exception e) {
-            System.err.println("Error during analysis: " + e.getMessage());
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error during analysis: " + e.getMessage(), e);
             System.exit(1);
         }
     }
 
     private static void runAnalysis(Path monolithPath, String tableName, String outputFormat) {
-        System.out.println("=======================================================================");
-        System.out.println("        STATIC IMPACT ANALYSIS TOOL - Version 3.0                ");
-        System.out.println("=======================================================================");
-        System.out.println();
+        logger.log(Level.INFO, "=======================================================================");
+        logger.log(Level.INFO, "        STATIC IMPACT ANALYSIS TOOL - Version 3.0                ");
+        logger.log(Level.INFO, "=======================================================================");
+        logger.log(Level.INFO, "");
 
         // Initialize the analyzer
         ImpactAnalyzer analyzer = new ImpactAnalyzer();
@@ -76,49 +81,49 @@ public class MainV3 {
         analyzer.initialize(monolithPath);
         long indexTime = System.currentTimeMillis() - startTime;
 
-        System.out.println();
-        System.out.println("Indexing completed in " + indexTime + " ms");
-        System.out.println();
+        logger.log(Level.INFO, "");
+        logger.log(Level.INFO, "Indexing completed in " + indexTime + " ms");
+        logger.log(Level.INFO, "");
 
         // Display statistics
         displayStatistics(analyzer.getStatistics());
-        System.out.println();
+        logger.log(Level.INFO, "");
 
         // Perform impact analysis
-        System.out.println("Analyzing impact for table: " + tableName);
-        System.out.println("-".repeat(70));
+        logger.log(Level.INFO, "Analyzing impact for table: " + tableName);
+        logger.log(Level.INFO, "-".repeat(70));
 
         startTime = System.currentTimeMillis();
         ImpactAnalysisResult result = analyzer.analyzeTableImpact(tableName);
         long analysisTime = System.currentTimeMillis() - startTime;
 
-        System.out.println("Analysis completed in " + analysisTime + " ms");
-        System.out.println();
+        logger.log(Level.INFO, "Analysis completed in " + analysisTime + " ms");
+        logger.log(Level.INFO, "");
 
         // Generate and output report
         if (outputFormat.equals("json")) {
             JsonReporter jsonReporter = new JsonReporter();
             String jsonReport = jsonReporter.generateReport(result);
-            System.out.println(jsonReport);
+            logger.log(Level.INFO, jsonReport);
         } else {
             TextReporter textReporter = new TextReporter();
             String textReport = textReporter.generateReport(result);
-            System.out.println(textReport);
+            logger.log(Level.INFO, textReport);
         }
 
         // Save report to file
         try {
             saveReportToFile(result, tableName, outputFormat);
         } catch (IOException e) {
-            System.err.println("Warning: Could not save report to file: " + e.getMessage());
+            logger.log(Level.SEVERE, "Warning: Could not save report to file: " + e.getMessage());
         }
     }
 
     private static void displayStatistics(Map<String, Integer> stats) {
-        System.out.println("INDEXING STATISTICS:");
-        System.out.println("-".repeat(70));
+        logger.log(Level.INFO, "INDEXING STATISTICS:");
+        logger.log(Level.INFO, "-".repeat(70));
         stats.forEach((key, value) ->
-            System.out.printf("  %-25s: %,d%n", key, value)
+            logger.log(Level.INFO, String.format("  %-25s: %,d", key, value))
         );
     }
 
@@ -139,30 +144,30 @@ public class MainV3 {
         }
 
         Files.writeString(outputPath, content);
-        System.out.println("Report saved to: " + outputPath.toAbsolutePath());
+        logger.log(Level.INFO, "Report saved to: " + outputPath.toAbsolutePath());
     }
 
     private static void printUsage() {
-        System.out.println("Usage: java v3.MainV3 <monolith-root-path> <table-name> [output-format]");
-        System.out.println();
-        System.out.println("Arguments:");
-        System.out.println("  monolith-root-path  : Path to the root of the Java monolith");
-        System.out.println("  table-name          : Database table name to analyze");
-        System.out.println("  output-format       : Optional. Either 'json' or 'text' (default: text)");
-        System.out.println();
-        System.out.println("Example:");
-        System.out.println("  java v3.MainV3 /path/to/monolith CUSTOMER_TABLE json");
-        System.out.println();
-        System.out.println("Description:");
-        System.out.println("  Performs static impact analysis on a Java monolith to determine");
-        System.out.println("  which service methods are affected by changes to a database table.");
-        System.out.println();
-        System.out.println("  The tool:");
-        System.out.println("    1. Scans all Maven modules");
-        System.out.println("    2. Parses MyBatis mapper XML files");
-        System.out.println("    3. Extracts SQL table references using JSqlParser");
-        System.out.println("    4. Analyzes Java source code using JavaParser AST");
-        System.out.println("    5. Builds the impact chain: Table → Mapper → Service");
-        System.out.println();
+        logger.log(Level.INFO, "Usage: java v3.MainV3 <monolith-root-path> <table-name> [output-format]");
+        logger.log(Level.INFO, "");
+        logger.log(Level.INFO, "Arguments:");
+        logger.log(Level.INFO, "  monolith-root-path  : Path to the root of the Java monolith");
+        logger.log(Level.INFO, "  table-name          : Database table name to analyze");
+        logger.log(Level.INFO, "  output-format       : Optional. Either 'json' or 'text' (default: text)");
+        logger.log(Level.INFO, "");
+        logger.log(Level.INFO, "Example:");
+        logger.log(Level.INFO, "  java v3.MainV3 /path/to/monolith CUSTOMER_TABLE json");
+        logger.log(Level.INFO, "");
+        logger.log(Level.INFO, "Description:");
+        logger.log(Level.INFO, "  Performs static impact analysis on a Java monolith to determine");
+        logger.log(Level.INFO, "  which service methods are affected by changes to a database table.");
+        logger.log(Level.INFO, "");
+        logger.log(Level.INFO, "  The tool:");
+        logger.log(Level.INFO, "    1. Scans all Maven modules");
+        logger.log(Level.INFO, "    2. Parses MyBatis mapper XML files");
+        logger.log(Level.INFO, "    3. Extracts SQL table references using JSqlParser");
+        logger.log(Level.INFO, "    4. Analyzes Java source code using JavaParser AST");
+        logger.log(Level.INFO, "    5. Builds the impact chain: Table  Mapper  Service");
+        logger.log(Level.INFO, "");
     }
 }

@@ -7,11 +7,17 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Scans a directory structure to discover Maven modules.
  */
 public class ModuleScanner {
+    private static final Logger logger = Logger.getLogger(ModuleScanner.class.getName());
+    static {
+        logger.setLevel(Level.SEVERE); // Hide info/debug messages by default
+    }
 
     /**
      * Scans the given root path for Maven modules (directories containing pom.xml).
@@ -29,7 +35,7 @@ public class ModuleScanner {
         try {
             findModulesRecursively(rootPath, modules);
         } catch (IOException e) {
-            System.err.println("Error scanning modules: " + e.getMessage());
+            logger.log(Level.SEVERE, "Error scanning modules: " + e.getMessage());
         }
 
         return modules;
@@ -61,8 +67,7 @@ public class ModuleScanner {
                      try {
                          findModulesRecursively(subDir, modules);
                      } catch (IOException e) {
-                         // Log and continue
-                         System.err.println("Error scanning directory " + subDir + ": " + e.getMessage());
+                         logger.log(Level.SEVERE, "Error scanning directory " + subDir + ": " + e.getMessage());
                      }
                  });
         }

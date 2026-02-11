@@ -14,12 +14,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Analyzes Java source files to find service methods that invoke mapper methods.
  * Uses JavaParser for AST-based analysis (no string matching).
  */
 public class JavaSourceAnalyzer {
+    private static final Logger logger = Logger.getLogger(JavaSourceAnalyzer.class.getName());
+    static {
+        logger.setLevel(Level.SEVERE); // Hide info/debug messages by default
+    }
 
     private final JavaParser javaParser;
 
@@ -43,7 +49,7 @@ public class JavaSourceAnalyzer {
             ParseResult<CompilationUnit> parseResult = javaParser.parse(javaFilePath);
 
             if (!parseResult.isSuccessful()) {
-                System.err.println("Failed to parse " + javaFilePath);
+                logger.log(Level.SEVERE, "Failed to parse " + javaFilePath);
                 return serviceMethods;
             }
 
@@ -79,7 +85,7 @@ public class JavaSourceAnalyzer {
             });
 
         } catch (IOException e) {
-            System.err.println("Error reading Java file " + javaFilePath + ": " + e.getMessage());
+            logger.log(Level.SEVERE, "Error reading Java file " + javaFilePath + ": " + e.getMessage());
         }
 
         return serviceMethods;

@@ -6,12 +6,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Locates MyBatis/iBatis mapper XML files within Maven modules.
  * Supports finding XML files in both resources folder and Java source folders.
  */
 public class MapperXmlLocator {
+    private static final Logger logger = Logger.getLogger(MapperXmlLocator.class.getName());
+    static {
+        logger.setLevel(Level.SEVERE); // Hide info/debug messages by default
+    }
 
     /**
      * Finds all MyBatis/iBatis mapper XML files in the given directory.
@@ -25,17 +31,17 @@ public class MapperXmlLocator {
         List<Path> mapperFiles = new ArrayList<>();
 
         if (searchPath == null || !Files.exists(searchPath)) {
-            System.out.println("MapperXmlLocator: Search path does not exist or is null: " + searchPath);
+            logger.log(Level.WARNING, "MapperXmlLocator: Search path does not exist or is null: " + searchPath);
             return mapperFiles;
         }
 
-        System.out.println("MapperXmlLocator: Scanning for XML files in: " + searchPath);
+        logger.log(Level.FINE, "MapperXmlLocator: Scanning for XML files in: " + searchPath);
 
         try {
             findMapperXmlFilesRecursively(searchPath, mapperFiles);
-            System.out.println("MapperXmlLocator: Found " + mapperFiles.size() + " mapper XML file(s)");
+            logger.log(Level.FINE, "MapperXmlLocator: Found " + mapperFiles.size() + " mapper XML file(s)");
         } catch (IOException e) {
-            System.err.println("Error scanning mapper XML files in " + searchPath + ": " + e.getMessage());
+            logger.log(Level.SEVERE, "Error scanning mapper XML files in " + searchPath + ": " + e.getMessage());
         }
 
         return mapperFiles;
@@ -51,16 +57,14 @@ public class MapperXmlLocator {
                  .filter(p -> {
                      boolean isXml = p.toString().toLowerCase().endsWith(".xml");
                      if (isXml) {
-                         System.out.println("  Found XML file: " + p);
+                         logger.log(Level.FINE, "  Found XML file: " + p);
                      }
                      return isXml;
                  })
                  .filter(p -> {
                      boolean isMapper = isLikelyMapperFile(p);
                      if (!isMapper) {
-                         System.out.println("    Excluded (not a mapper): " + p);
-                     } else {
-                         System.out.println("    Included as mapper: " + p);
+                         logger.log(Level.FINE, "  Skipping non-mapper XML: " + p);
                      }
                      return isMapper;
                  })

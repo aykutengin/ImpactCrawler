@@ -75,7 +75,7 @@ public class MyBatisXmlParser {
             }
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error parsing mapper XML " + xmlPath + ": " + e.getMessage());
+            logger.log(Level.SEVERE, "Error parsing mapper XML: " + xmlPath + ", " + e.getMessage());
         }
 
         return methods;
