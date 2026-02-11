@@ -34,8 +34,12 @@ public class MapperToServiceIndexer {
         Map<String, List<ServiceMethod>> index = new HashMap<>();
 
         for (MavenModule module : modules) {
+            if (module.getJavaSourcePath() == null) {
+                continue;
+            }
+
             // Find all Java files in the module
-            List<Path> javaFiles = findJavaFiles(module.getRootPath());
+            List<Path> javaFiles = findJavaFiles(module.getJavaSourcePath());
 
             for (Path javaFile : javaFiles) {
                 // Analyze each Java file

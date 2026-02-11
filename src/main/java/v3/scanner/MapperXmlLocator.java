@@ -36,6 +36,7 @@ public class MapperXmlLocator {
             System.out.println("MapperXmlLocator: Found " + mapperFiles.size() + " mapper XML file(s)");
         } catch (IOException e) {
             System.err.println("Error scanning mapper XML files in " + searchPath + ": " + e.getMessage());
+            e.printStackTrace();
         }
 
         return mapperFiles;

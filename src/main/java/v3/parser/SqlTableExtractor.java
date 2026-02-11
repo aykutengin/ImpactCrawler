@@ -10,7 +10,7 @@ import java.util.regex.*;
 public class SqlTableExtractor {
 
     private static final Set<String> SQL_KEYWORDS = Set.of(
-        "DUAL", "SELECT", "FROM", "WHERE", "AND", "OR", "ON", "AS", "SET", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS", "VALUES", "UPDATE", "INSERT", "DELETE", "MERGE", "INTO", "USING", "GROUP", "ORDER", "BY", "HAVING", "DISTINCT", "LIMIT", "OFFSET", "CASE", "WHEN", "THEN", "ELSE", "END", "IN", "EXISTS", "NOT", "NULL", "IS", "LIKE", "BETWEEN", "ASC", "DESC", "WITH", "PARTITION"
+        "SELECT", "FROM", "WHERE", "AND", "OR", "ON", "AS", "SET", "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS", "VALUES", "UPDATE", "INSERT", "DELETE", "MERGE", "INTO", "USING", "GROUP", "ORDER", "BY", "HAVING", "DISTINCT", "LIMIT", "OFFSET", "CASE", "WHEN", "THEN", "ELSE", "END", "IN", "EXISTS", "NOT", "NULL", "IS", "LIKE", "BETWEEN", "ASC", "DESC", "WITH", "PARTITION"
     );
 
     /**
