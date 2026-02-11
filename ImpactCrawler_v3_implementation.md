@@ -16,14 +16,5 @@
 
 ## In Progress / To Do
 
-- [ ] Advanced SQL parsing and table extraction improvements
-- [ ] Support for additional repository patterns (beyond DbCmd)
-- [ ] Enhanced error handling and reporting
-- [ ] User interface improvements (CLI/GUI)
-- [ ] Documentation and usage examples
-- [ ] Performance optimization for large codebases
-
----
-
-This file tracks the implementation progress for ImpactCrawler V3. Completed tasks are marked with a tick. Please update as new features are implemented or requirements change.
-
+- [ ] Get each table repository and methods, find methods references, put these references in repo_method_references.json file
+- [ ] Develop reference finder algorithm in RepositoryReferenceFinder.

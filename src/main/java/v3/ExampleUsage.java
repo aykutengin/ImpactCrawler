@@ -68,30 +68,4 @@ public class ExampleUsage {
         logger.log(Level.INFO, "\nJSON Output:");
         logger.log(Level.INFO, jsonReport);
     }
-
-    private static void multipleTableAnalysis() {
-        logger.log(Level.INFO, "\n\n=== Example 2: Multiple Table Analysis ===\n");
-
-        // Initialize once
-        ImpactAnalyzer analyzer = new ImpactAnalyzer();
-        analyzer.initialize(Paths.get("./path/to/your/monolith"));
-
-        // View statistics
-        logger.log(Level.INFO, "Indexing Statistics:");
-        analyzer.getStatistics().forEach((key, value) ->
-            logger.log(Level.INFO, String.format("  %s: %d", key, value))
-        );
-
-        // Analyze multiple tables efficiently (reuse same analyzer)
-        String[] tables = {"PINSTATUS"};
-
-        for (String table : tables) {
-            logger.log(Level.INFO, "\n--- Analyzing: " + table + " ---");
-            ImpactAnalysisResult result = analyzer.analyzeTableImpact(table);
-
-            logger.log(Level.INFO, String.format("  Found %d impacted service methods", result.getImpacts().size()));
-            logger.log(Level.INFO, String.format("  Unresolved references: %d", result.getUnresolvedMapperReferences().size()));
-            logger.log(Level.INFO, String.format("  Warnings: %d", result.getWarnings().size()));
-        }
-    }
 }
