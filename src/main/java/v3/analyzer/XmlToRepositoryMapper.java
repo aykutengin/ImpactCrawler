@@ -52,7 +52,7 @@ public class XmlToRepositoryMapper {
                 String baseName = xmlFileName.replaceFirst("\\.xml$", "");
                 Path parentDir = xmlPath.getParent() != null ? xmlPath.getParent().getParent() : null;
                 if (parentDir == null) continue;
-                Path dbCmdPath = parentDir.resolve(baseName + ".java");
+                Path dbCmdPath = parentDir.resolve(baseName + "DbCmd.java");
                 if (!Files.exists(dbCmdPath)) continue;
                 String repoClass = dbCmdPath.getFileName().toString().replace(".java", "");
                 repoClasses.add(repoClass);
