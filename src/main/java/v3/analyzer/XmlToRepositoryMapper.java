@@ -44,42 +44,28 @@ public class XmlToRepositoryMapper {
             List<TableXmlMapping> methods = entry.getValue();
             Set<String> xmlFiles = new HashSet<>();
             Set<String> repoClasses = new HashSet<>();
-            List<String> repoMethods = new ArrayList<>();
+            Set<String> repoMethods = new HashSet<>();
             for (TableXmlMapping m : methods) {
                 xmlFiles.add(m.getMapperXmlPath());
                 Path xmlPath = Path.of(m.getMapperXmlPath());
                 String xmlFileName = xmlPath.getFileName().toString();
                 String baseName = xmlFileName.replaceFirst("\\.xml$", "");
-                String repoClass = baseName;
                 Path parentDir = xmlPath.getParent() != null ? xmlPath.getParent().getParent() : null;
-                if (parentDir == null) {
-                    repoMethods.add("[N/A]-" + repoClass);
-                    continue;
-                }
-                Path dbCmdPath = parentDir.resolve(repoClass + ".java");
-                if (!Files.exists(dbCmdPath)) {
-                    repoMethods.add("[N/A]-" + repoClass);
-                    continue;
-                }
+                if (parentDir == null) continue;
+                Path dbCmdPath = parentDir.resolve(baseName + ".java");
+                if (!Files.exists(dbCmdPath)) continue;
+                String repoClass = dbCmdPath.getFileName().toString().replace(".java", "");
                 repoClasses.add(repoClass);
                 Set<String> repoClassMethods = dbCmdClassToMethods.computeIfAbsent(dbCmdPath.toString(), k -> parseJavaMethods(dbCmdPath));
-                boolean found = false;
-                for (String repoMethod : repoClassMethods) {
-                    if (repoMethod.equals(m.getStatementId())) {
-                        repoMethods.add(repoClass + "." + repoMethod);
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    repoMethods.add("[N/A]-" + repoClass + "." + m.getStatementId());
+                if (repoClassMethods.contains(m.getStatementId())) {
+                    repoMethods.add(m.getStatementId());
                 }
             }
             mappings.add(new TableRepositoryMapping(
                 tableName,
                 new ArrayList<>(xmlFiles),
                 new ArrayList<>(repoClasses),
-                repoMethods
+                new ArrayList<>(repoMethods)
             ));
             count++;
             if (count % batchSize == 0) {
