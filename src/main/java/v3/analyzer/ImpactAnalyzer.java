@@ -1,6 +1,6 @@
 package v3.analyzer;
 
-import v3.indexer.RepositoryReferenceFinder;
+import v3.indexer.CalleeMethodIndexer;
 import v3.indexer.TableToXmlIndexer;
 import v3.model.*;
 import v3.scanner.ModuleScanner;
@@ -19,7 +19,7 @@ public class ImpactAnalyzer {
 
     private final ModuleScanner moduleScanner;
     private final TableToXmlIndexer tableIndexer;
-    private final RepositoryReferenceFinder referenceFinder;
+    private final CalleeMethodIndexer referenceFinder;
     private final XmlToRepositoryMapper xmlRepoMapper;
 
     // Cached indices
@@ -35,7 +35,7 @@ public class ImpactAnalyzer {
     public ImpactAnalyzer() {
         this.moduleScanner = new ModuleScanner();
         this.tableIndexer = new TableToXmlIndexer();
-        this.referenceFinder = new RepositoryReferenceFinder();
+        this.referenceFinder = new CalleeMethodIndexer();
         this.xmlRepoMapper = new XmlToRepositoryMapper();
     }
 
@@ -67,20 +67,8 @@ public class ImpactAnalyzer {
         logger.log(Level.SEVERE, "Wrote " + repoMappings.size() + " table-repository mappings");
 
         logger.log(Level.SEVERE, "Building mapper -> service index...");
-        // Collect all Java file paths from filteredModules
-        List<Path> javaFiles = new ArrayList<>();
-        for (MavenModule module : filteredModules) {
-            Path javaSrc = module.getJavaSourcePath();
-            if (javaSrc != null && javaSrc.toFile().exists()) {
-                try (java.util.stream.Stream<Path> stream = Files.walk(javaSrc)) {
-                    stream.filter(p -> p.toString().endsWith(".java"))
-                          .forEach(javaFiles::add);
-                } catch (Exception e) {
-                    logger.log(Level.WARNING, "Failed to scan java files in " + javaSrc + ": " + e.getMessage());
-                }
-            }
-        }
-        mapperToServiceIndex = referenceFinder.findReferences(repoMappings, javaFiles);
+
+        mapperToServiceIndex = referenceFinder.findReferences(repoMappings, filteredModules);
         logger.log(Level.SEVERE, "Indexed " + mapperToServiceIndex.size() + " mapper method references");
 
         logger.log(Level.SEVERE, "Initialization complete!");

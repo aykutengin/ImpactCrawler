@@ -1,5 +1,6 @@
 package v3.indexer;
 
+import v3.model.MavenModule;
 import v3.model.ServiceMethod;
 import v3.model.TableRepositoryMapping;
 import com.github.javaparser.JavaParser;
@@ -15,6 +16,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeS
 import com.github.javaparser.ast.expr.Expression;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
@@ -23,8 +25,8 @@ import java.util.logging.Logger;
 /**
  * Builds an index mapping mapper methods to service methods.
  */
-public class RepositoryReferenceFinder {
-    private static final Logger logger = Logger.getLogger(RepositoryReferenceFinder.class.getName());
+public class CalleeMethodIndexer {
+    private static final Logger logger = Logger.getLogger(CalleeMethodIndexer.class.getName());
     private static final String REPO_METHOD_REFERENCES_FILE = "repo_method_references.json";
     private static final String CALL_EXPRESSION_CACHE_FILE = "call_expression_cache.json";
     private static final String CALL_EXPRESSION_CACHE_INCREMENTAL_FILE = "call_expression_cache_incremental.jsonl";
@@ -37,7 +39,7 @@ public class RepositoryReferenceFinder {
     private final JavaSymbolSolver symbolSolver;
     private int incrementalWriteCounter = 0;
 
-    public RepositoryReferenceFinder() {
+    public CalleeMethodIndexer() {
         this.typeSolver = new CombinedTypeSolver();
         this.typeSolver.add(new ReflectionTypeSolver());
         // Add your project source root for full type resolution
@@ -66,11 +68,28 @@ public class RepositoryReferenceFinder {
         }
     }
 
-    public Map<String, List<ServiceMethod>> findReferences(List<TableRepositoryMapping> repoMappings, List<Path> allJavaFiles) {
-        // parseAllJavaFiles(allJavaFiles);
+    public Map<String, List<ServiceMethod>> findReferences(List<TableRepositoryMapping> repoMappings, List<MavenModule> filteredModules) {
+        var  allJavaFiles = listAllJavaFiles(filteredModules);
         populateCalleeMethodList(allJavaFiles);
         // This method is now only for populating the call expression cache, so return an empty map
         return Collections.emptyMap();
+    }
+
+    private List<Path> listAllJavaFiles(List<MavenModule> filteredModules) {
+        // Collect all Java file paths from filteredModules
+        List<Path> javaFiles = new ArrayList<>();
+        for (MavenModule module : filteredModules) {
+            Path javaSrc = module.getJavaSourcePath();
+            if (javaSrc != null && javaSrc.toFile().exists()) {
+                try (java.util.stream.Stream<Path> stream = Files.walk(javaSrc)) {
+                    stream.filter(p -> p.toString().endsWith(".java"))
+                            .forEach(javaFiles::add);
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Failed to scan java files in " + javaSrc + ": " + e.getMessage());
+                }
+            }
+        }
+        return javaFiles;
     }
 
     private void populateCalleeMethodList(List<Path> allJavaFiles) {
@@ -153,7 +172,6 @@ public class RepositoryReferenceFinder {
         }
         // Fallback: return scope as is
         return scope;
-        // TODO: Integrate JavaParser SymbolSolver for full type resolution
     }
 
     private void writeRepoMethodReferences(Map<String, List<Map<String, Object>>> data) {
