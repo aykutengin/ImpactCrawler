@@ -5,6 +5,7 @@ import v3.indexer.TableToXmlIndexer;
 import v3.model.*;
 import v3.scanner.ModuleScanner;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -66,7 +67,20 @@ public class ImpactAnalyzer {
         logger.log(Level.SEVERE, "Wrote " + repoMappings.size() + " table-repository mappings");
 
         logger.log(Level.SEVERE, "Building mapper -> service index...");
-        mapperToServiceIndex = referenceFinder.findReferences(repoMappings);
+        // Collect all Java file paths from filteredModules
+        List<Path> javaFiles = new ArrayList<>();
+        for (MavenModule module : filteredModules) {
+            Path javaSrc = module.getJavaSourcePath();
+            if (javaSrc != null && javaSrc.toFile().exists()) {
+                try (java.util.stream.Stream<Path> stream = Files.walk(javaSrc)) {
+                    stream.filter(p -> p.toString().endsWith(".java"))
+                          .forEach(javaFiles::add);
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Failed to scan java files in " + javaSrc + ": " + e.getMessage());
+                }
+            }
+        }
+        mapperToServiceIndex = referenceFinder.findReferences(repoMappings, javaFiles);
         logger.log(Level.SEVERE, "Indexed " + mapperToServiceIndex.size() + " mapper method references");
 
         logger.log(Level.SEVERE, "Initialization complete!");

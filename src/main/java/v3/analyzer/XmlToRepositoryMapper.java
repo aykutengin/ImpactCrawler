@@ -30,11 +30,37 @@ public class XmlToRepositoryMapper {
     private static final String TABLE_REPO_MAPPING_FILE = "table_repo_mapping.json";
     private final Gson gson = new Gson();
 
+    private String getFQCN(Path javaFile) {
+        try {
+            CompilationUnit cu = javaParser.parse(javaFile).getResult().orElse(null);
+            if (cu != null) {
+                String pkg = cu.getPackageDeclaration().map(pd -> pd.getNameAsString()).orElse("");
+                String className = javaFile.getFileName().toString().replaceFirst("\\.java$", "");
+                return pkg.isEmpty() ? className : pkg + "." + className;
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Error extracting FQCN from Java file: " + javaFile + ", " + e.getMessage());
+        }
+        return javaFile.getFileName().toString().replaceFirst("\\.java$", "");
+    }
+
     /**
      * For each table, map XMLs and repository classes/methods.
      * Returns a list of TableRepositoryMapping.
      */
     public List<TableRepositoryMapping> mapXmlToRepository(Map<String, List<TableXmlMapping>> tableIndex, List<MavenModule> modules) {
+        // If the mapping file exists, load and return it
+        java.io.File file = new java.io.File(TABLE_REPO_MAPPING_FILE);
+        if (file.exists()) {
+            try (java.io.FileReader reader = new java.io.FileReader(file)) {
+                TableRepositoryMapping[] arr = gson.fromJson(reader, TableRepositoryMapping[].class);
+                if (arr != null) {
+                    return new ArrayList<>(java.util.Arrays.asList(arr));
+                }
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Failed to load table-repository mapping from disk: " + e.getMessage());
+            }
+        }
         List<TableRepositoryMapping> mappings = new ArrayList<>();
         Map<String, Set<String>> dbCmdClassToMethods = new HashMap<>();
         int batchSize = 1000;
@@ -50,29 +76,29 @@ public class XmlToRepositoryMapper {
                 Path xmlPath = Path.of(m.getMapperXmlPath());
                 String xmlFileName = xmlPath.getFileName().toString();
                 String baseName = xmlFileName.replaceFirst("\\.xml$", "");
-                String repoClass = baseName;
                 Path parentDir = xmlPath.getParent() != null ? xmlPath.getParent().getParent() : null;
                 if (parentDir == null) {
-                    repoMethods.add("[N/A]-" + repoClass);
+                    repoMethods.add("[N/A]-" + baseName);
                     continue;
                 }
-                Path dbCmdPath = parentDir.resolve(repoClass + ".java");
+                Path dbCmdPath = parentDir.resolve(baseName + ".java");
+                String fqcn = getFQCN(dbCmdPath);
                 if (!Files.exists(dbCmdPath)) {
-                    repoMethods.add("[N/A]-" + repoClass);
+                    repoMethods.add("[N/A]-" + fqcn);
                     continue;
                 }
-                repoClasses.add(repoClass);
+                repoClasses.add(fqcn);
                 Set<String> repoClassMethods = dbCmdClassToMethods.computeIfAbsent(dbCmdPath.toString(), k -> parseJavaMethods(dbCmdPath));
                 boolean found = false;
                 for (String repoMethod : repoClassMethods) {
                     if (repoMethod.equals(m.getStatementId())) {
-                        repoMethods.add(repoClass + "." + repoMethod);
+                        repoMethods.add(fqcn + "." + repoMethod);
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
-                    repoMethods.add("[N/A]-" + repoClass + "." + m.getStatementId());
+                    repoMethods.add("[N/A]-" + fqcn + "." + m.getStatementId());
                 }
             }
             mappings.add(new TableRepositoryMapping(
