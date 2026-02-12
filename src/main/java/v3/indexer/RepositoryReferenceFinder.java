@@ -27,13 +27,15 @@ public class RepositoryReferenceFinder {
     private static final Logger logger = Logger.getLogger(RepositoryReferenceFinder.class.getName());
     private static final String REPO_METHOD_REFERENCES_FILE = "repo_method_references.json";
     private static final String CALL_EXPRESSION_CACHE_FILE = "call_expression_cache.json";
+    private static final String CALL_EXPRESSION_CACHE_INCREMENTAL_FILE = "call_expression_cache_incremental.jsonl";
     private final Gson gson = new Gson();
     private final JavaParser javaParser = new JavaParser();
     private final Map<Path, CompilationUnit> parsedFileCache = new HashMap<>();
-    private final Map<String, LinkedList<String>> callExpressionCache = new HashMap<>();
+    private final Map<String, LinkedList<CallReference>> callExpressionCache = new HashMap<>();
     private static final Set<String> EXCLUDED_METHODS = Set.of("toString", "hashCode", "equals", "wait", "notify", "notifyAll", "getClass");
     private final CombinedTypeSolver typeSolver;
     private final JavaSymbolSolver symbolSolver;
+    private int incrementalWriteCounter = 0;
 
     public RepositoryReferenceFinder() {
         this.typeSolver = new CombinedTypeSolver();
@@ -72,6 +74,7 @@ public class RepositoryReferenceFinder {
     }
 
     private void populateCalleeMethodList(List<Path> allJavaFiles) {
+        List<Map.Entry<String, CallReference>> incrementalBuffer = new ArrayList<>();
         for (Path javaFile : allJavaFiles) {
             CompilationUnit cu = compile(javaFile);
             if (cu == null) continue;
@@ -79,24 +82,34 @@ public class RepositoryReferenceFinder {
                 String className = classDecl.getNameAsString();
                 String classFQCN = resolveFQCN(cu, className);
                 classDecl.findAll(MethodDeclaration.class).forEach(methodDecl -> {
+                    String sourceMethodFQCN = classFQCN + "." + methodDecl.getNameAsString();
                     methodDecl.findAll(MethodCallExpr.class).forEach(call -> {
                         String calleeMethod = populateCalleeMethod(call);
                         if (EXCLUDED_METHODS.contains(calleeMethod)) return;
                         String calleeClass = populateCalleeClass(call, classFQCN, cu);
                         String fullName = calleeClass + "." + calleeMethod;
+                        int line = call.getBegin().map(p -> p.line).orElse(-1);
+                        CallReference ref = new CallReference(javaFile.toString(), line, sourceMethodFQCN);
                         if (callExpressionCache.containsKey(fullName)) {
-                            callExpressionCache.get(fullName).add(javaFile.toString() + ":" + call.getBegin().map(p -> p.line).orElse(-1));
+                            callExpressionCache.get(fullName).add(ref);
                         } else {
-                            LinkedList<String> refs = new LinkedList<>();
-                            refs.add(javaFile.toString() + ":" + call.getBegin().map(p -> p.line).orElse(-1));
+                            LinkedList<CallReference> refs = new LinkedList<>();
+                            refs.add(ref);
                             callExpressionCache.put(fullName, refs);
                         }
-                        if (callExpressionCache.size() % 1000 == 0) {
-                            writeCallExpressionCache();
+                        incrementalBuffer.add(Map.entry(fullName, ref));
+                        incrementalWriteCounter++;
+                        if (incrementalWriteCounter % 1000 == 0) {
+                            writeCallExpressionCacheIncremental(incrementalBuffer);
+                            incrementalBuffer.clear();
                         }
                     });
                 });
             });
+        }
+        // Write any remaining buffered entries
+        if (!incrementalBuffer.isEmpty()) {
+            writeCallExpressionCacheIncremental(incrementalBuffer);
         }
     }
 
@@ -158,6 +171,21 @@ public class RepositoryReferenceFinder {
             logger.log(Level.INFO, "Wrote call expression cache to " + CALL_EXPRESSION_CACHE_FILE);
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Failed to write call expression cache: " + e.getMessage());
+        }
+    }
+
+    private void writeCallExpressionCacheIncremental(List<Map.Entry<String, CallReference>> buffer) {
+        try (java.io.FileWriter writer = new java.io.FileWriter(CALL_EXPRESSION_CACHE_INCREMENTAL_FILE, true)) {
+            for (Map.Entry<String, CallReference> entry : buffer) {
+                Map<String, Object> jsonObj = new HashMap<>();
+                jsonObj.put("callee", entry.getKey());
+                jsonObj.put("reference", entry.getValue());
+                writer.write(gson.toJson(jsonObj));
+                writer.write("\n");
+            }
+            logger.log(Level.INFO, "Appended " + buffer.size() + " call references to " + CALL_EXPRESSION_CACHE_INCREMENTAL_FILE);
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Failed to append call references: " + e.getMessage());
         }
     }
 
