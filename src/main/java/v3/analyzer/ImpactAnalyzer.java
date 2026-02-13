@@ -1,5 +1,6 @@
 package v3.analyzer;
 
+import v3.indexer.CallReference;
 import v3.indexer.CalleeMethodIndexer;
 import v3.indexer.TableToXmlIndexer;
 import v3.model.*;
@@ -24,7 +25,7 @@ public class ImpactAnalyzer {
 
     // Cached indices
     private Map<String, List<TableXmlMapping>> tableIndex;
-    private Map<String, List<ServiceMethod>> mapperToServiceIndex;
+    private Map<String, List<CallReference>> mapperToServiceIndex;
     private Set<String> mapperNamespaces;
 
     private static final Logger logger = Logger.getLogger(ImpactAnalyzer.class.getName());
@@ -101,19 +102,19 @@ public class ImpactAnalyzer {
         // Step 2: For each mapper method, find service methods that call it
         for (TableXmlMapping tableXmlMapping : tableXmlMappings) {
             String mapperRef = tableXmlMapping.getFullyQualifiedId();
-            List<ServiceMethod> serviceMethods = mapperToServiceIndex.getOrDefault(mapperRef, new ArrayList<>());
+            List<CallReference> serviceMethods = mapperToServiceIndex.getOrDefault(mapperRef, new ArrayList<>());
 
             if (serviceMethods.isEmpty()) {
                 unresolvedReferences.add(mapperRef);
             } else {
-                for (ServiceMethod serviceMethod : serviceMethods) {
+                for (CallReference callRef : serviceMethods) {
                     TableImpact impact = new TableImpact(
-                        serviceMethod.getModuleName(),
+                        null, // ModuleName not available in CallReference
                         Paths.get(tableXmlMapping.getMapperXmlPath()).getFileName().toString(),
                         tableXmlMapping.getNamespace(),
                         tableXmlMapping.getStatementId(),
-                        serviceMethod.getServiceClassName(),
-                        serviceMethod.getMethodName(),
+                        null, // ServiceClassName not available in CallReference
+                        callRef.getSourceMethod(),
                         null // SOAP endpoint detection not implemented yet
                     );
                     impacts.add(impact);

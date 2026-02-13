@@ -33,11 +33,12 @@ public class CalleeMethodIndexer {
     private final Gson gson = new Gson();
     private final JavaParser javaParser = new JavaParser();
     private final Map<Path, CompilationUnit> parsedFileCache = new HashMap<>();
-    private final Map<String, LinkedList<CallReference>> callExpressionCache = new HashMap<>();
+    private final Map<String, List<CallReference>> callExpressionCache = new HashMap<>();
     private static final Set<String> EXCLUDED_METHODS = Set.of("toString", "hashCode", "equals", "wait", "notify", "notifyAll", "getClass");
     private final CombinedTypeSolver typeSolver;
     private final JavaSymbolSolver symbolSolver;
     private int incrementalWriteCounter = 0;
+    private Map<String, List<CallReference>> callReferenceTree = new HashMap<>();
 
     public CalleeMethodIndexer() {
         this.typeSolver = new CombinedTypeSolver();
@@ -68,11 +69,13 @@ public class CalleeMethodIndexer {
         }
     }
 
-    public Map<String, List<ServiceMethod>> findReferences(List<TableRepositoryMapping> repoMappings, List<MavenModule> filteredModules) {
-        var  allJavaFiles = listAllJavaFiles(filteredModules);
+    public Map<String, List<CallReference>> findReferences(List<TableRepositoryMapping> repoMappings, List<MavenModule> filteredModules) {
+        if (loadIndex()) {
+            return callExpressionCache;
+        }
+        var allJavaFiles = listAllJavaFiles(filteredModules);
         populateCalleeMethodList(allJavaFiles);
-        // This method is now only for populating the call expression cache, so return an empty map
-        return Collections.emptyMap();
+        return callExpressionCache;
     }
 
     private List<Path> listAllJavaFiles(List<MavenModule> filteredModules) {
@@ -195,10 +198,8 @@ public class CalleeMethodIndexer {
     private void writeCallExpressionCacheIncremental(List<Map.Entry<String, CallReference>> buffer) {
         try (java.io.FileWriter writer = new java.io.FileWriter(CALL_EXPRESSION_CACHE_INCREMENTAL_FILE, true)) {
             for (Map.Entry<String, CallReference> entry : buffer) {
-                Map<String, Object> jsonObj = new HashMap<>();
-                jsonObj.put("callee", entry.getKey());
-                jsonObj.put("reference", entry.getValue());
-                writer.write(gson.toJson(jsonObj));
+                CallReferenceRecord record = new CallReferenceRecord(entry.getKey(), entry.getValue());
+                writer.write(gson.toJson(record));
                 writer.write("\n");
             }
             logger.log(Level.INFO, "Appended " + buffer.size() + " call references to " + CALL_EXPRESSION_CACHE_INCREMENTAL_FILE);
@@ -298,6 +299,31 @@ public class CalleeMethodIndexer {
         }
         // Fallback: return scope name
         return scopeName;
+    }
+
+
+    /**
+     * Loads the call reference tree from the incremental JSONL file if it exists.
+     * Returns true if loaded, false otherwise.
+     */
+    public boolean loadIndex() {
+        Path filePath = Path.of(CALL_EXPRESSION_CACHE_INCREMENTAL_FILE);
+        if (!filePath.toFile().exists()) {
+            logger.log(Level.INFO, CALL_EXPRESSION_CACHE_INCREMENTAL_FILE + " does not exist, skipping load.");
+            return false;
+        }
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(filePath.toFile()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                CallReferenceRecord record = gson.fromJson(line, CallReferenceRecord.class);
+                callExpressionCache.computeIfAbsent(record.callee, k -> new ArrayList<>()).add(record.reference);
+            }
+            logger.log(Level.INFO, "Loaded call reference tree from " + CALL_EXPRESSION_CACHE_INCREMENTAL_FILE);
+            return true;
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to load call reference tree: " + e.getMessage());
+            return false;
+        }
     }
 
 
