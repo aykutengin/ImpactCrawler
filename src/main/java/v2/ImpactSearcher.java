@@ -32,12 +32,17 @@ public class ImpactSearcher {
     }
 
     public void searchAndPrint(List<String> terms, int maxHitsPerTerm) throws IOException {
+        List<LinkedHashSet> relatedServicesList = new ArrayList<>();
         for (String term : terms) {
-            searchTerm(term, maxHitsPerTerm);
+            relatedServicesList.add(searchTerm(term, maxHitsPerTerm));
         }
+        relatedServicesList.stream().forEach(relatedServices -> {
+            relatedServices.stream().forEach(relatedService -> System.out.print(relatedService+ ", "));
+        });
+//        System.out.println("\n\nRelated services " + relatedServicesList);
     }
 
-    private void searchTerm(String term, int maxHitsPerTerm) throws IOException {
+    private LinkedHashSet searchTerm(String term, int maxHitsPerTerm) throws IOException {
         Queue<CrawlerTerm> queue = new LinkedList<>();
         TreeSet<CrawlerTerm> crawlerTermTreeSet = new TreeSet<>();
         CrawlerTerm rootCrawlerTerm = new CrawlerTerm(term, null);
@@ -48,10 +53,10 @@ public class ImpactSearcher {
             if (crawlerTermTreeSet.contains(crawlerTerm)) {
                 continue;
             }
-            String lowerCaseTerm = crawlerTerm.getSource().toLowerCase(Locale.ROOT);
+            String searchTerm = crawlerTerm.getSource(); // case-sensitive
             BooleanQuery.Builder bq = new BooleanQuery.Builder();
-            bq.add(new TermQuery(new Term("content_exact", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
-            bq.add(new TermQuery(new Term("content_parts", lowerCaseTerm)), BooleanClause.Occur.SHOULD);
+            bq.add(new TermQuery(new Term("content_exact", searchTerm)), BooleanClause.Occur.SHOULD);
+            bq.add(new TermQuery(new Term("content_parts", searchTerm)), BooleanClause.Occur.SHOULD);
             TopDocs hits = searcher.search(bq.build(), maxHitsPerTerm);
             crawlerTermTreeSet.add(crawlerTerm);
 //            System.out.println("\nTERM: " + crawlerTerm + "  (hits: " + hits.totalHits.value() + ")");
@@ -72,7 +77,8 @@ public class ImpactSearcher {
 //                System.out.println("discoveredTerm : " + discoveredTerm);
             }
         }
-        logger.info("relatedServices for " + rootCrawlerTerm.getSource() + ": " + relatedServices);
+//        logger.info("relatedServices for " + rootCrawlerTerm.getSource() + ": " + relatedServices);
+        return relatedServices;
     }
 
     public void close() throws IOException {

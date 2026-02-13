@@ -2,9 +2,7 @@ package v2;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -33,7 +31,8 @@ public class CodeIndexer {
 
     public void buildOrUpdate() throws IOException {
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
-            @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                 String name = dir.getFileName() == null ? "" : dir.getFileName().toString();
                 if (name.equals(".git") || name.equals("target") || name.equals("build") || name.equals(".gradle") || name.equals("out") || name.equals("node_modules")) {
                     return FileVisitResult.SKIP_SUBTREE;
@@ -41,8 +40,10 @@ public class CodeIndexer {
                 return FileVisitResult.CONTINUE;
             }
 
-            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!file.getFileName().toString().endsWith(".java")) return FileVisitResult.CONTINUE;
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (!file.getFileName().toString().endsWith(".java"))
+                    return FileVisitResult.CONTINUE;
 
                 String content = SafeReader.safeRead(file, charsetName, bestEffort);
                 if (content == null) return FileVisitResult.CONTINUE;
@@ -62,5 +63,17 @@ public class CodeIndexer {
         writer.flush();
         writer.close();
         dir.close();
+    }
+
+    public void indexReader(Path dir) throws IOException {
+        IndexReader reader = DirectoryReader.open(FSDirectory.open(dir));
+        StoredFields storedFields = reader.storedFields();
+        for (int i = 0; i < reader.maxDoc(); i++) {
+            Document doc = storedFields.document(i);
+            String path = doc.get("path");
+            if (path.contains("EscapeService")) {
+                System.out.println("Found: " + path);
+            }
+        }
     }
 }

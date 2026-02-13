@@ -18,7 +18,7 @@ public class Main {
             case INDEX: {
                 Path root = Paths.get(cli.root);
                 Path indexPath = Paths.get(cli.indexPath);
-                Analyzer analyzer = CodeAnalyzer.perField();
+                Analyzer analyzer = CodeAnalyzer.exactOnly();
                 CodeIndexer indexer = new CodeIndexer(root, indexPath, analyzer, cli.charsetName, cli.bestEffort);
                 indexer.buildOrUpdate();
                 System.out.println("Index built at: " + indexPath.toAbsolutePath());
@@ -26,7 +26,7 @@ public class Main {
             }
             case SEARCH: {
                 Path indexPath = Paths.get(cli.indexPath);
-                Analyzer analyzer = CodeAnalyzer.perField();
+                Analyzer analyzer = CodeAnalyzer.exactOnly();
                 ImpactSearcher searcher = new ImpactSearcher(indexPath, analyzer);
                 searcher.searchAndPrint(cli.terms, cli.maxHits);
                 searcher.close();
