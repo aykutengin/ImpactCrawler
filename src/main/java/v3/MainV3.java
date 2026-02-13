@@ -85,7 +85,7 @@ public class MainV3 {
         logger.log(Level.INFO, "Indexing completed in " + indexTime + " ms");
         logger.log(Level.INFO, "");
 
-        // Display statistics
+        // Display statistics (refreshed)
         displayStatistics(analyzer.getStatistics());
         logger.log(Level.INFO, "");
 

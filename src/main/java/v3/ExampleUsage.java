@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 public class ExampleUsage {
     private static final Logger logger = Logger.getLogger(ExampleUsage.class.getName());
     static {
-        logger.setLevel(Level.SEVERE); // Hide info/debug messages by default
+        logger.setLevel(Level.INFO); // Show info messages to see output
     }
 
     public static void main(String[] args) {
@@ -55,17 +55,17 @@ public class ExampleUsage {
         analyzer.initialize(Paths.get(basePath));
 
         // Analyze impact for a specific table
-        ImpactAnalysisResult result = analyzer.analyzeTableImpact("PINUMBER");
+        ImpactAnalysisResult result = analyzer.analyzeTableImpact("ADDRESS_SME");
 
         // Generate text report
         TextReporter textReporter = new TextReporter();
         String textReport = textReporter.generateReport(result);
-        logger.log(Level.INFO, textReport);
+        System.out.println(textReport);
 
         // Generate JSON report
         JsonReporter jsonReporter = new JsonReporter();
         String jsonReport = jsonReporter.generateReport(result);
-        logger.log(Level.INFO, "\nJSON Output:");
-        logger.log(Level.INFO, jsonReport);
+        System.out.println("\nJSON Output:");
+        System.out.println(jsonReport);
     }
 }
